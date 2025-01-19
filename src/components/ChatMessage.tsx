@@ -18,9 +18,8 @@ export function ChatMessage({ message }: ChatMessageProps) {
     return (
       <ReactMarkdown
         className="prose prose-sm max-w-none dark:prose-invert prose-headings:dark:text-gray-200 prose-p:dark:text-gray-300"
-        
       >
-        {message.content as string}
+        {content}
       </ReactMarkdown>
     );
   };
@@ -29,7 +28,8 @@ export function ChatMessage({ message }: ChatMessageProps) {
     <div
       className={clsx(
         'flex gap-4 p-4',
-        isUser ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'
+        isUser ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700',
+        message.isStreaming && 'border-l-4 border-green-500'
       )}
     >
       <div className="flex-shrink-0">

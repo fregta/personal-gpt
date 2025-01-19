@@ -1,6 +1,7 @@
 export interface Message {
   role: 'user' | 'assistant' | 'system';
   content: string | ImageContent[];
+  isStreaming?: boolean;
 }
 
 export interface ImageContent {

@@ -89,35 +89,51 @@ function App() {
 
     setChatState((prev) => ({
       ...prev,
-      messages: newMessages,
+      messages: [...newMessages, { role: 'assistant', content: '', isStreaming: true }],
       isLoading: true,
       error: null,
     }));
 
     try {
-      const completion = await openai.current.chat.completions.create({
+      const stream = await openai.current.chat.completions.create({
         model: image ? "gpt-4o" : "gpt-4o",
         messages: newMessages.map((msg) => ({
           role: msg.role,
           content: msg.content,
         })),
-        max_tokens: 500,
+        stream: true,
       });
 
-      const assistantMessage: Message = {
-        role: "assistant",
-        content: completion.choices[0]?.message?.content || "No response",
-      };
+      let accumulatedContent = '';
+      
+      for await (const chunk of stream) {
+        const content = chunk.choices[0]?.delta?.content || '';
+        accumulatedContent += content;
+        
+        setChatState((prev) => ({
+          ...prev,
+          messages: prev.messages.map((msg, i) => 
+            i === prev.messages.length - 1 
+              ? { ...msg, content: accumulatedContent }
+              : msg
+          ),
+        }));
+      }
 
       setChatState((prev) => ({
         ...prev,
-        messages: [...prev.messages, assistantMessage],
+        messages: prev.messages.map((msg, i) => 
+          i === prev.messages.length - 1 
+            ? { ...msg, content: accumulatedContent, isStreaming: false }
+            : msg
+        ),
         isLoading: false,
       }));
     } catch (error) {
       console.error("OpenAI API error:", error);
       setChatState((prev) => ({
         ...prev,
+        messages: prev.messages.slice(0, -1),
         isLoading: false,
         error: "Error communicating with OpenAI",
       }));
