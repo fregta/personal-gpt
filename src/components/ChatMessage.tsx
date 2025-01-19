@@ -23,9 +23,9 @@ export function ChatMessage({ message }: ChatMessageProps) {
 
     return (
       <ReactMarkdown
-        className="prose prose-sm max-w-none dark:prose-invert prose-headings:dark:text-gray-200 prose-p:dark:text-gray-300"
+        className="reactMarkDown prose prose-sm max-w-none dark:prose-invert prose-headings:dark:text-gray-200 prose-p:dark:text-gray-300"
         components={{
-          code: CodeBlock
+          code: CodeBlock,
         }}
       >
         {content}
@@ -33,14 +33,23 @@ export function ChatMessage({ message }: ChatMessageProps) {
     );
   };
 
-  const CodeBlock = ({ node, inline, className, children, ...props }: any) => {
-    if (inline) {
-      return <code className="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded" {...props}>{children}</code>;
+  const CodeBlock = ({ className, children, ...props }: any) => {
+    const match = /language-(\w+)/.exec(className || '');
+    const content = String(children).replace(/`/g, '');
+    
+    const isInline = !match && !content.includes('\n');
+
+    if (isInline) {
+      console.log(content);
+      console.log(content.replace(/^`|`$/g, ''));
+      return (
+        <code className="not-prose bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-100 px-1.5 py-0.5 rounded text-sm font-mono">
+          {content}
+        </code>
+      );
     }
 
-    const match = /language-(\w+)/.exec(className || '');
     const language = match ? match[1] : '';
-
     const copyToClipboard = (code: string) => {
       navigator.clipboard.writeText(code);
     };
@@ -48,7 +57,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
     return (
       <div className="relative group">
         <button
-          onClick={() => copyToClipboard(String(children))}
+          onClick={() => copyToClipboard(content)}
           className="absolute right-2 top-2 p-1 rounded bg-gray-700/50 hover:bg-gray-700/75 invisible group-hover:visible"
           aria-label="Copy code"
         >
@@ -61,7 +70,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
           className="!mt-0 !mb-4"
           {...props}
         >
-          {String(children).replace(/\n$/, '')}
+          {content.replace(/\n$/, '')}
         </SyntaxHighlighter>
       </div>
     );
@@ -70,9 +79,9 @@ export function ChatMessage({ message }: ChatMessageProps) {
   return (
     <div
       className={clsx(
-        'flex gap-4 p-4',
-        isUser ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700',
-        message.isStreaming && 'border-l-4 border-green-500'
+        "flex gap-4 p-4",
+        isUser ? "bg-white dark:bg-gray-800" : "bg-gray-50 dark:bg-gray-700",
+        message.isStreaming && "border-l-4 border-green-500"
       )}
     >
       <div className="flex-shrink-0">
@@ -82,23 +91,21 @@ export function ChatMessage({ message }: ChatMessageProps) {
           <Bot className="w-6 h-6 text-green-500" />
         )}
       </div>
-      <div className="flex-1">
-        {Array.isArray(message.content) ? (
-          message.content.map((content, index) => (
-            <div key={index} className="mb-2">
-              {content.type === 'text' && renderContent(content.text || '')}
-              {content.type === 'image_url' && content.image_url && (
-                <img
-                  src={content.image_url.url}
-                  alt="Uploaded content"
-                  className="max-w-sm rounded-lg shadow-md"
-                />
-              )}
-            </div>
-          ))
-        ) : (
-          renderContent(message.content)
-        )}
+      <div className="flex-1  mr-6">
+        {Array.isArray(message.content)
+          ? message.content.map((content, index) => (
+              <div key={index} className="mb-2">
+                {content.type === "text" && renderContent(content.text || "")}
+                {content.type === "image_url" && content.image_url && (
+                  <img
+                    src={content.image_url.url}
+                    alt="Uploaded content"
+                    className="max-w-sm rounded-lg shadow-md"
+                  />
+                )}
+              </div>
+            ))
+          : renderContent(message.content)}
       </div>
     </div>
   );
