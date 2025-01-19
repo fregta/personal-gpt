@@ -5,10 +5,10 @@ import { Chat, ChatStorage, Message } from "../types/chat";
 export const generateChatTitle = async (messages: Message[], openai: OpenAI): Promise<string> => {
   try {
     const firstMessage = messages[0].content;
-    const prompt = `Generate a short, descriptive title (max 6 words) for this chat based on the first message: "${firstMessage}"`;
+    const prompt = `Generate a short, descriptive title (max 6 words) for this chat based on the first message in the language of the first message: "${firstMessage}"`;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "gpt-4o-mini",
       messages: [{ role: "user", content: prompt }],
       temperature: 0.7,
       max_tokens: 30,

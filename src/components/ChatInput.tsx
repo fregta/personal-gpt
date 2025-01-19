@@ -4,9 +4,10 @@ import { Send, ImagePlus } from 'lucide-react';
 interface ChatInputProps {
   onSendMessage: (message: string, image?: File) => void;
   isLoading: boolean;
+  model: string;
 }
 
-export function ChatInput({ onSendMessage, isLoading }: ChatInputProps) {
+export function ChatInput({ onSendMessage, isLoading, model }: ChatInputProps) {
   const [message, setMessage] = useState('');
   const [image, setImage] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -28,6 +29,11 @@ export function ChatInput({ onSendMessage, isLoading }: ChatInputProps) {
   };
 
   const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    console.log(model);
+    if (model === "gpt-4o-mini-2024-07-18") {
+      alert("GPT-4o mini does not support images");
+      return;
+    }
     const items = e.clipboardData.items;
     for (let i = 0; i < items.length; i++) {
       if (items[i].type.indexOf('image') !== -1) {
@@ -87,6 +93,12 @@ export function ChatInput({ onSendMessage, isLoading }: ChatInputProps) {
         <input
           type="file"
           ref={fileInputRef}
+          onClick={(e) => {
+            if (model === "gpt-4o-mini-2024-07-18") {
+              alert("GPT-4o mini does not support images");
+              e.preventDefault();
+            }
+          }}
           onChange={handleImageSelect}
           accept="image/*"
           className="hidden"

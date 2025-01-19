@@ -40,8 +40,6 @@ export function ChatMessage({ message }: ChatMessageProps) {
     const isInline = !match && !content.includes('\n');
 
     if (isInline) {
-      console.log(content);
-      console.log(content.replace(/^`|`$/g, ''));
       return (
         <code className="not-prose bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-100 px-1.5 py-0.5 rounded text-sm font-mono">
           {content}

@@ -38,6 +38,7 @@ function App() {
     return document.documentElement.classList.contains("dark");
   });
   const [chats, setChats] = useState<ChatStorage>({});
+  const [selectedModel, setSelectedModel] = useState("gpt-4o");
 
   useEffect(() => {
     if (apiKey?.startsWith("sk-")) {
@@ -82,12 +83,15 @@ function App() {
   const debouncedSave = useMemo(
     () =>
       debounce(
-        (
-          messages: Message[],
-          id: string,
-          title?: string,
-          isNewChat?: boolean
-        ) => {
+        async (messages: Message[], id: string, isNewChat?: boolean) => {
+          let title;
+          if (messages.length === 2 && openai.current) {
+            try {
+              title = await generateChatTitle(messages, openai.current);
+            } catch (error) {
+              console.error("Error generating chat title:", error);
+            }
+          }
           const chatHistory = saveChatHistory(id, messages, title);
           if (isNewChat && chatHistory) {
             setChats(chatHistory);
@@ -95,23 +99,12 @@ function App() {
         },
         1000
       ),
-    []
+    [openai]
   );
 
   useEffect(() => {
     if (chatState.messages.length > 0 && openai.current) {
-      if (chatState.messages.length === 2) {
-        generateChatTitle(chatState.messages, openai.current)
-          .then((title) => {
-            debouncedSave(chatState.messages, chatId, title, true);
-          })
-          .catch(() => {
-            alert("Error generating chat title");
-            debouncedSave(chatState.messages, chatId);
-          });
-      } else {
-        debouncedSave(chatState.messages, chatId);
-      }
+      debouncedSave(chatState.messages, chatId, chatState.messages.length === 2);
     }
   }, [chatState.messages, chatId, debouncedSave]);
 
@@ -162,7 +155,7 @@ function App() {
 
     try {
       const stream = await openai.current.chat.completions.create({
-        model: image ? "gpt-4o" : "gpt-4o",
+        model: image ? "gpt-4-vision-preview" : selectedModel,
         messages: newMessages.map((msg) => ({
           role: msg.role,
           content: msg.content,
@@ -231,7 +224,6 @@ function App() {
     }
   };
 
-  // Add this function inside the App component
   const handleNewChat = () => {
     const newChatId = uuidv4();
     setChatState({
@@ -244,11 +236,19 @@ function App() {
 
   return openai.current ? (
     <div className="flex flex-col min-h-screen h-max bg-gray-100 dark:bg-gray-900">
-      <div className="p-4 flex justify-between">
+      <div className="p-4 flex justify-between items-center">
         <h1 className="text-2xl font-bold text-black dark:text-white">
           Personal-GPT
         </h1>
-        <div>
+        <div className="flex items-center gap-2">
+          <select
+            value={selectedModel}
+            onChange={(e) => setSelectedModel(e.target.value)}
+            className="px-3 py-2 rounded-lg bg-white dark:bg-gray-800 text-black dark:text-white border border-gray-300 dark:border-gray-700"
+          >
+            <option value="gpt-4o-mini">GPT-4 mini</option>
+            <option value="gpt-4o">GPT-4o</option>
+          </select>
           <button
             onClick={handleNewChat}
             className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 mr-2"
@@ -296,6 +296,7 @@ function App() {
           <ChatInput
             onSendMessage={handleSendMessage}
             isLoading={chatState.isLoading}
+            model={selectedModel}
           />
         </div>
         <ChatSidebar
