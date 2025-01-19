@@ -10,6 +10,7 @@ export function ChatInput({ onSendMessage, isLoading }: ChatInputProps) {
   const [message, setMessage] = useState('');
   const [image, setImage] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,8 +47,19 @@ export function ChatInput({ onSendMessage, isLoading }: ChatInputProps) {
     }
   };
 
+  const adjustTextareaHeight = () => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = `${textarea.scrollHeight}px`;
+    }
+  };
+
   return (
-    <form onSubmit={handleSubmit} className="border-t dark:border-gray-700 bg-white dark:bg-gray-800 p-4 w-8/12 mx-auto">
+    <form
+      onSubmit={handleSubmit}
+      className="border-t dark:border-gray-700 bg-white dark:bg-gray-800 p-4 w-8/12 mx-auto"
+    >
       {image && (
         <div className="mb-2 flex items-center gap-2">
           <img
@@ -79,14 +91,26 @@ export function ChatInput({ onSendMessage, isLoading }: ChatInputProps) {
           accept="image/*"
           className="hidden"
         />
-        <input
-          type="text"
+        <textarea
+          ref={textareaRef}
           value={message}
-          onChange={(e) => setMessage(e.target.value)}
+          onChange={(e) => {
+            setMessage(e.target.value);
+            adjustTextareaHeight();
+          }}
+          //@ts-expect-error handlePaste has type error but it works
           onPaste={handlePaste}
           placeholder="Type a message..."
-          className="flex-1 p-2 border dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 dark:text-gray-200 dark:placeholder-gray-400"
+          className="flex-1 p-2 border dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 dark:text-gray-200 dark:placeholder-gray-400 resize-none min-h-[40px] max-h-[160px] overflow-y-auto"
           disabled={isLoading}
+          rows={1}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              handleSubmit(e);
+            }
+            adjustTextareaHeight();
+          }}
         />
         <button
           type="submit"
