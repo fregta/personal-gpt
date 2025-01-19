@@ -3,6 +3,12 @@ import { Bot, User } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { Message } from '../types/chat';
 
+//@ts-expect-error react-syntax-highlighter types are not compatible with react-markdown
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+//@ts-expect-error react-syntax-highlighter types are not compatible with react-markdown
+import { oneDark } from 'react-syntax-highlighter/dist/cjs/styles/prism';
+import { ClipboardCopy } from 'lucide-react';
+
 interface ChatMessageProps {
   message: Message;
 }
@@ -18,9 +24,46 @@ export function ChatMessage({ message }: ChatMessageProps) {
     return (
       <ReactMarkdown
         className="prose prose-sm max-w-none dark:prose-invert prose-headings:dark:text-gray-200 prose-p:dark:text-gray-300"
+        components={{
+          code: CodeBlock
+        }}
       >
         {content}
       </ReactMarkdown>
+    );
+  };
+
+  const CodeBlock = ({ node, inline, className, children, ...props }: any) => {
+    if (inline) {
+      return <code className="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded" {...props}>{children}</code>;
+    }
+
+    const match = /language-(\w+)/.exec(className || '');
+    const language = match ? match[1] : '';
+
+    const copyToClipboard = (code: string) => {
+      navigator.clipboard.writeText(code);
+    };
+
+    return (
+      <div className="relative group">
+        <button
+          onClick={() => copyToClipboard(String(children))}
+          className="absolute right-2 top-2 p-1 rounded bg-gray-700/50 hover:bg-gray-700/75 invisible group-hover:visible"
+          aria-label="Copy code"
+        >
+          <ClipboardCopy className="w-4 h-4 text-gray-300" />
+        </button>
+        <SyntaxHighlighter
+          style={oneDark}
+          language={language}
+          PreTag="div"
+          className="!mt-0 !mb-4"
+          {...props}
+        >
+          {String(children).replace(/\n$/, '')}
+        </SyntaxHighlighter>
+      </div>
     );
   };
 
