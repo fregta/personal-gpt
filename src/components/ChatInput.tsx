@@ -47,7 +47,7 @@ export function ChatInput({ onSendMessage, isLoading }: ChatInputProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="border-t dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+    <form onSubmit={handleSubmit} className="border-t dark:border-gray-700 bg-white dark:bg-gray-800 p-4 w-8/12 mx-auto">
       {image && (
         <div className="mb-2 flex items-center gap-2">
           <img

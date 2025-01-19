@@ -146,8 +146,11 @@ function App() {
   };
 
   return openai.current ? (
-    <div className="flex flex-col h-screen bg-gray-100 dark:bg-gray-900">
-      <div className="p-4 flex justify-end">
+    <div className="flex flex-col min-h-screen h-max bg-gray-100 dark:bg-gray-900">
+      <div className="p-4 flex justify-between">
+        <h1 className="text-2xl font-bold text-black dark:text-white">
+          Personal-GPT
+        </h1>
         <button
           onClick={toggleDarkMode}
           className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
@@ -159,17 +162,21 @@ function App() {
           )}
         </button>
       </div>
-      <div className="flex-1 overflow-y-auto">
-        {chatState.messages.map((message, index) => (
-          <ChatMessage key={`chat_${index}`} message={message} isStreaming/>
-        ))}
-        {chatState.isLoading && (
-          <div className="p-4 text-center text-gray-500">Thinking...</div>
-        )}
-        {chatState.error && (
-          <div className="p-4 text-center text-red-500">{chatState.error}</div>
-        )}
-        <div ref={messagesEndRef} />
+      <div className="flex-1 justify-center">
+        <div className="flex-1 overflow-y-auto w-8/12 mx-auto">
+          {chatState.messages.map((message, index) => (
+            <ChatMessage key={`chat_${index}`} message={message} isStreaming />
+          ))}
+          {chatState.isLoading && (
+            <div className="p-4 text-center text-gray-500">Thinking...</div>
+          )}
+          {chatState.error && (
+            <div className="p-4 text-center text-red-500">
+              {chatState.error}
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
       </div>
       <ChatInput
         onSendMessage={handleSendMessage}
