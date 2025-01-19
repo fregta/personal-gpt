@@ -163,7 +163,7 @@ function App() {
         </button>
       </div>
       <div className="flex-1 justify-center">
-        <div className="flex-1 overflow-y-auto w-8/12 mx-auto">
+        <div className="flex flex-col overflow-y-auto w-8/12 mx-auto gap-3">
           {chatState.messages.map((message, index) => (
             <ChatMessage key={`chat_${index}`} message={message} isStreaming />
           ))}

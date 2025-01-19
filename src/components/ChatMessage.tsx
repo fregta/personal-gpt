@@ -79,7 +79,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
   return (
     <div
       className={clsx(
-        "flex gap-4 p-4",
+        "flex gap-4 p-4 rounded-md",
         isUser ? "bg-white dark:bg-gray-800" : "bg-gray-50 dark:bg-gray-700",
         message.isStreaming && "border-l-4 border-green-500"
       )}
