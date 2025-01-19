@@ -3,22 +3,25 @@ import OpenAI from "openai";
 import { ApiKeyInput } from "./components/ApiKeyInput";
 import { ChatMessage } from "./components/ChatMessage";
 import { ChatInput } from "./components/ChatInput";
-import type { Message, ChatState } from "./types/chat";
-import { Moon, Sun, Trash2 } from "lucide-react";
+import type { Message, ChatState, ChatStorage } from "./types/chat";
+import { Moon, Plus, Sun, Trash2 } from "lucide-react";
 import {
   saveChatHistory,
   getChatHistory,
   clearChatHistory,
   generateChatTitle,
+  getAllChats,
+  deleteChat,
 } from "./utils/chatStorage";
 import { v4 as uuidv4 } from "uuid";
 import { debounce } from "./utils/debounce";
+import { ChatSidebar } from "./components/ChatSidebar";
 
 function App() {
   const [apiKey, setApiKey] = useState(
     import.meta.env.VITE_OPENAI_API_KEY || ""
   );
-  const [chatId] = useState(() => {
+  const [chatId, setChatId] = useState(() => {
     return uuidv4();
   });
   const [chatState, setChatState] = useState<ChatState>(() => {
@@ -34,12 +37,17 @@ function App() {
   const [isDark, setIsDark] = useState(() => {
     return document.documentElement.classList.contains("dark");
   });
+  const [chats, setChats] = useState<ChatStorage>({});
 
   useEffect(() => {
     if (apiKey?.startsWith("sk-")) {
       initializeChat(apiKey);
     }
   }, [apiKey]);
+
+  useEffect(() => {
+    setChats(getAllChats());
+  }, [chatState.messages]);
 
   const initializeChat = (key: string) => {
     if (!key.startsWith("sk-")) {
@@ -72,23 +80,35 @@ function App() {
   }, [chatState.messages]);
 
   const debouncedSave = useMemo(
-    () => debounce((messages: Message[], id: string, title?: string) => {
-      saveChatHistory(id, messages, title);
-    }, 1000),
+    () =>
+      debounce(
+        (
+          messages: Message[],
+          id: string,
+          title?: string,
+          isNewChat?: boolean
+        ) => {
+          const chatHistory = saveChatHistory(id, messages, title);
+          if (isNewChat && chatHistory) {
+            setChats(chatHistory);
+          }
+        },
+        1000
+      ),
     []
   );
 
   useEffect(() => {
     if (chatState.messages.length > 0 && openai.current) {
       if (chatState.messages.length === 2) {
-        generateChatTitle(chatState.messages, openai.current).then(
-          (title) => {
-            debouncedSave(chatState.messages, chatId, title);
-          }
-        ).catch(() => {
-          alert('Error generating chat title');
-          debouncedSave(chatState.messages, chatId);
-        });
+        generateChatTitle(chatState.messages, openai.current)
+          .then((title) => {
+            debouncedSave(chatState.messages, chatId, title, true);
+          })
+          .catch(() => {
+            alert("Error generating chat title");
+            debouncedSave(chatState.messages, chatId);
+          });
       } else {
         debouncedSave(chatState.messages, chatId);
       }
@@ -191,6 +211,37 @@ function App() {
     document.documentElement.classList.toggle("dark");
   };
 
+  const handleDeleteChat = (id: string) => {
+    deleteChat(id);
+    if (id === chatId) {
+      handleNewChat();
+    }
+    setChats(getAllChats());
+  };
+
+  const handleChatSelect = (id: string) => {
+    setChatId(id);
+    const selectedChat = getChatHistory(id);
+    if (selectedChat) {
+      setChatState((prev) => ({
+        ...prev,
+        messages: selectedChat.messages,
+        error: null,
+      }));
+    }
+  };
+
+  // Add this function inside the App component
+  const handleNewChat = () => {
+    const newChatId = uuidv4();
+    setChatState({
+      messages: [],
+      isLoading: false,
+      error: null,
+    });
+    setChatId(newChatId);
+  };
+
   return openai.current ? (
     <div className="flex flex-col min-h-screen h-max bg-gray-100 dark:bg-gray-900">
       <div className="p-4 flex justify-between">
@@ -199,8 +250,18 @@ function App() {
         </h1>
         <div>
           <button
-            onClick={clearChatHistory}
-            className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+            onClick={handleNewChat}
+            className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 mr-2"
+          >
+            <Plus className="w-5 h-5 text-green-500" />
+          </button>
+          <button
+            onClick={() => {
+              clearChatHistory();
+              handleNewChat();
+              setChats({});
+            }}
+            className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 mr-2"
           >
             <Trash2 className="w-5 h-5 text-red-500" />
           </button>
@@ -216,26 +277,34 @@ function App() {
           </button>
         </div>
       </div>
-      <div className="flex-1 justify-center">
-        <div className="flex flex-col overflow-y-auto w-8/12 mx-auto gap-3">
-          {chatState.messages.map((message, index) => (
-            <ChatMessage key={`chat_${index}`} message={message} />
-          ))}
-          {chatState.isLoading && (
-            <div className="p-4 text-center text-gray-500">Thinking...</div>
-          )}
-          {chatState.error && (
-            <div className="p-4 text-center text-red-500">
-              {chatState.error}
-            </div>
-          )}
-          <div ref={messagesEndRef} />
+      <div className="flex flex-1">
+        <div className="flex flex-col w-full justify-between">
+          <div className="flex flex-col overflow-y-auto w-8/12 mx-auto gap-3">
+            {chatState.messages.map((message, index) => (
+              <ChatMessage key={`chat_${index}`} message={message} />
+            ))}
+            {chatState.isLoading && (
+              <div className="p-4 text-center text-gray-500">Thinking...</div>
+            )}
+            {chatState.error && (
+              <div className="p-4 text-center text-red-500">
+                {chatState.error}
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+          <ChatInput
+            onSendMessage={handleSendMessage}
+            isLoading={chatState.isLoading}
+          />
         </div>
+        <ChatSidebar
+          chats={chats}
+          currentChatId={chatId}
+          onChatSelect={handleChatSelect}
+          onDeleteChat={handleDeleteChat}
+        />
       </div>
-      <ChatInput
-        onSendMessage={handleSendMessage}
-        isLoading={chatState.isLoading}
-      />
     </div>
   ) : (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">

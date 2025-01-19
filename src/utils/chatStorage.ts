@@ -40,7 +40,9 @@ export const saveChatHistory = (chatId: string, messages: Message[], title?: str
       }
     }
     localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+    return chatHistory;
   } catch (error) {
+    alert('Error saving chat history');
     console.error('Error saving chat history:', error);
   }
 };
