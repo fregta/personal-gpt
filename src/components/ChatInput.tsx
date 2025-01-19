@@ -101,7 +101,7 @@ export function ChatInput({ onSendMessage, isLoading }: ChatInputProps) {
           //@ts-expect-error handlePaste has type error but it works
           onPaste={handlePaste}
           placeholder="Type a message..."
-          className="flex-1 p-2 border dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 dark:text-gray-200 dark:placeholder-gray-400 resize-none min-h-[40px] max-h-[160px] overflow-y-auto"
+          className="flex-1 p-2 border dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 dark:text-gray-200 dark:placeholder-gray-400 resize-none min-h-[45px] max-h-[160px] overflow-y-auto"
           disabled={isLoading}
           rows={1}
           onKeyDown={(e) => {
