@@ -1,26 +1,42 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import OpenAI from "openai";
 import { ApiKeyInput } from "./components/ApiKeyInput";
 import { ChatMessage } from "./components/ChatMessage";
 import { ChatInput } from "./components/ChatInput";
 import type { Message, ChatState } from "./types/chat";
-import { Moon, Sun } from 'lucide-react';
+import { Moon, Sun, Trash2 } from "lucide-react";
+import {
+  saveChatHistory,
+  getChatHistory,
+  clearChatHistory,
+  generateChatTitle,
+} from "./utils/chatStorage";
+import { v4 as uuidv4 } from "uuid";
+import { debounce } from "./utils/debounce";
 
 function App() {
-  const [apiKey, setApiKey] = useState(import.meta.env.VITE_OPENAI_API_KEY || "");
-  const [chatState, setChatState] = useState<ChatState>({
-    messages: [],
-    isLoading: false,
-    error: null,
+  const [apiKey, setApiKey] = useState(
+    import.meta.env.VITE_OPENAI_API_KEY || ""
+  );
+  const [chatId] = useState(() => {
+    return uuidv4();
+  });
+  const [chatState, setChatState] = useState<ChatState>(() => {
+    const savedMessages = getChatHistory(chatId);
+    return {
+      messages: savedMessages || [],
+      isLoading: false,
+      error: null,
+    };
   });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const openai = useRef<OpenAI | null>(null);
   const [isDark, setIsDark] = useState(() => {
-    return document.documentElement.classList.contains('dark');
+    return document.documentElement.classList.contains("dark");
   });
 
   useEffect(() => {
-    if (apiKey?.startsWith('sk-')) {
+    if (apiKey?.startsWith("sk-")) {
       initializeChat(apiKey);
     }
   }, [apiKey]);
@@ -31,12 +47,15 @@ function App() {
       return;
     }
     try {
-      openai.current = new OpenAI({ apiKey: key, dangerouslyAllowBrowser: true });
+      openai.current = new OpenAI({
+        apiKey: key,
+        dangerouslyAllowBrowser: true,
+      });
       setApiKey(key);
-      setChatState(prev => ({
+      setChatState((prev) => ({
         ...prev,
         messages: [],
-        error: null
+        error: null,
       }));
     } catch (error) {
       console.error("Error initializing OpenAI client:", error);
@@ -51,6 +70,30 @@ function App() {
   useEffect(() => {
     scrollToBottom();
   }, [chatState.messages]);
+
+  const debouncedSave = useMemo(
+    () => debounce((messages: Message[], id: string, title?: string) => {
+      saveChatHistory(id, messages, title);
+    }, 1000),
+    []
+  );
+
+  useEffect(() => {
+    if (chatState.messages.length > 0 && openai.current) {
+      if (chatState.messages.length === 2) {
+        generateChatTitle(chatState.messages, openai.current).then(
+          (title) => {
+            debouncedSave(chatState.messages, chatId, title);
+          }
+        ).catch(() => {
+          alert('Error generating chat title');
+          debouncedSave(chatState.messages, chatId);
+        });
+      } else {
+        debouncedSave(chatState.messages, chatId);
+      }
+    }
+  }, [chatState.messages, chatId, debouncedSave]);
 
   const handleSendMessage = async (text: string, image?: File) => {
     if (!openai.current) return;
@@ -89,7 +132,10 @@ function App() {
 
     setChatState((prev) => ({
       ...prev,
-      messages: [...newMessages, { role: 'assistant', content: '', isStreaming: true }],
+      messages: [
+        ...newMessages,
+        { role: "assistant", content: "", isStreaming: true },
+      ],
       isLoading: true,
       error: null,
     }));
@@ -104,16 +150,16 @@ function App() {
         stream: true,
       });
 
-      let accumulatedContent = '';
-      
+      let accumulatedContent = "";
+
       for await (const chunk of stream) {
-        const content = chunk.choices[0]?.delta?.content || '';
+        const content = chunk.choices[0]?.delta?.content || "";
         accumulatedContent += content;
-        
+
         setChatState((prev) => ({
           ...prev,
-          messages: prev.messages.map((msg, i) => 
-            i === prev.messages.length - 1 
+          messages: prev.messages.map((msg, i) =>
+            i === prev.messages.length - 1
               ? { ...msg, content: accumulatedContent }
               : msg
           ),
@@ -122,8 +168,8 @@ function App() {
 
       setChatState((prev) => ({
         ...prev,
-        messages: prev.messages.map((msg, i) => 
-          i === prev.messages.length - 1 
+        messages: prev.messages.map((msg, i) =>
+          i === prev.messages.length - 1
             ? { ...msg, content: accumulatedContent, isStreaming: false }
             : msg
         ),
@@ -142,7 +188,7 @@ function App() {
 
   const toggleDarkMode = () => {
     setIsDark(!isDark);
-    document.documentElement.classList.toggle('dark');
+    document.documentElement.classList.toggle("dark");
   };
 
   return openai.current ? (
@@ -151,21 +197,29 @@ function App() {
         <h1 className="text-2xl font-bold text-black dark:text-white">
           Personal-GPT
         </h1>
-        <button
-          onClick={toggleDarkMode}
-          className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
-        >
-          {isDark ? (
-            <Sun className="w-5 h-5 text-yellow-500" />
-          ) : (
-            <Moon className="w-5 h-5 text-gray-500" />
-          )}
-        </button>
+        <div>
+          <button
+            onClick={clearChatHistory}
+            className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+          >
+            <Trash2 className="w-5 h-5 text-red-500" />
+          </button>
+          <button
+            onClick={toggleDarkMode}
+            className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+          >
+            {isDark ? (
+              <Sun className="w-5 h-5 text-yellow-500" />
+            ) : (
+              <Moon className="w-5 h-5 text-gray-500" />
+            )}
+          </button>
+        </div>
       </div>
       <div className="flex-1 justify-center">
         <div className="flex flex-col overflow-y-auto w-8/12 mx-auto gap-3">
           {chatState.messages.map((message, index) => (
-            <ChatMessage key={`chat_${index}`} message={message} isStreaming />
+            <ChatMessage key={`chat_${index}`} message={message} />
           ))}
           {chatState.isLoading && (
             <div className="p-4 text-center text-gray-500">Thinking...</div>
