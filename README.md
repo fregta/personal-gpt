@@ -6,15 +6,34 @@ A sleek, modern chat interface powered by OpenAI's GPT-4 API. Features include d
 
 - 🔒 Secure API key handling
 - 🌓 Dark/Light mode toggle
-- 📸 Image upload support
-- ✨ Markdown rendering
+- 📸 Image upload support (GPT-4 Vision)
+- ✨ Markdown rendering with code highlighting
 - 💬 Real-time chat interface
+- 📚 Chat history with titles
+- 🔄 Multiple chat sessions
+- 🎯 Model selection (GPT-4o/GPT-4o mini)
 
 ## Prerequisites
 
 - Node.js (v18 or higher)
 - npm
 - OpenAI API key ([Get one here](https://platform.openai.com/api-keys))
+
+OR
+
+- Docker desktop installed
+
+
+### Docker guide
+
+1. Create an env.docker file containing you api key:
+```bash
+VITE_OPENAI_API_KEY=your_api_key_here
+```
+
+2. Run `docker-compose up` command in the project root
+
+3. 
 
 ## Installation
 
@@ -66,11 +85,13 @@ yarn preview
 
 Your OpenAI API key is stored locally in your browser and is never sent to any external servers besides OpenAI's API endpoints.
 
-
 ## Usage
 
 1. When you first launch the application, you'll be prompted to enter your OpenAI API key if no key was provided in .env file
 2. Once authenticated, you can start chatting with the AI
-3. Use the image upload button or paste images directly to include them in your messages
-4. Toggle between dark and light mode using the sun/moon icon in the top right
-5. At this time only one chat state can be shown. On reload the chat state is lost. 
+3. Use the image upload button or paste images directly to include them in your messages (GPT-4 Vision)
+4. Toggle between dark and light mode using the sun/moon icon
+5. Switch between GPT-4o and GPT-4o mini models using the dropdown
+6. Create new chats with the plus icon
+7. View and manage chat history in the sidebar
+8. Clear all chat history with the trash icon 
