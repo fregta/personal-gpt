@@ -38,7 +38,7 @@ function App() {
     return document.documentElement.classList.contains("dark");
   });
   const [chats, setChats] = useState<ChatStorage>({});
-  const [selectedModel, setSelectedModel] = useState("gpt-4o");
+  const [selectedModel, setSelectedModel] = useState("gpt-4o-mini");
 
   useEffect(() => {
     if (apiKey?.startsWith("sk-")) {
