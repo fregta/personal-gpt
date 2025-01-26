@@ -72,14 +72,6 @@ function App() {
     }
   };
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [chatState.messages]);
-
   const debouncedSave = useMemo(
     () =>
       debounce(
